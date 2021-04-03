@@ -1,0 +1,1 @@
+-- (Q, ∑, \gammma, \delta, q_0, accept, reject)

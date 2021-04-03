@@ -1,14 +1,19 @@
 import Data.Char(intToDigit)
 
 -- (Q, ∑, \delta, q0, F)
--- ["q1", "q2", "q3", "q4"]
-
 -- check format
+-- ?
+
+
+-- Q :: [String] = ["q1", "q2", "q3", "q4"]
+-- ∑ :: [Char] = ['0', '1']
+-- ["q1", "q2", "q3", "q4"] ['0', '1'] [[]] 0 [2,4]
+-- not implemented yet, use S_DFA instead
 
 
 -- S_DFA simple DFA
--- Q = [1..s_Q] does not have a name::String for each state
--- ∑ = [0..s_sigma] does not have a name::Char for each char
+-- Q :: [Int] = [1..s_Q] does not have a name::String for each state
+-- ∑ :: [Int] = [0..s_sigma] does not have a name::Char for each char
 -- "2 2 [[2,2,2],[1,1,1]] 1 [2] [0,1,2,1,2,1,0,1,0,2]
 
 
@@ -32,28 +37,29 @@ data Config =
 instance Show Config where
     show Config{ dfa = d, mark = x, stack = s} = unlines $
         [ show d
-        , (markCurrentState x (s_F d) [1..(s_Q d)])
+        , markCurrentState [1..(s_Q d)] (s_F d) x
         , show s
         ]
 
-markCurrentState :: Int -> [Int] -> [Int] -> String
-markCurrentState x f q = unlines
+-- markCurrentState Q F x
+-- putStrLn $ markCurrentState [1..5] [2,5] 2
+--        3
+--  1 [2] 3  4 [5]
+
+markCurrentState :: [Int] -> [Int] -> Int -> String
+markCurrentState q f x = unlines
     [ concat
-        [ replicate (length . markFStates [] $ take (x-1) q) ' '
+        [ replicate (length $ markFStates (take (x-1) q) []) ' '
         , addBrackets True x
         ]
     , b s
     ] where
-        s = markFStates f q
+        s = markFStates q f
         b y = y
 
--- markStates 2 [1..5] [2,5]
---        3
---  1 [2] ^  4 [5]
-
-
+-- markFStates Q F
 markFStates :: [Int] -> [Int] -> String
-markFStates f q = concat $ zipWith addBrackets (acceptable f q) q
+markFStates q f = concat $ zipWith addBrackets (acceptable q f) q
 
 addBrackets :: Bool -> Int -> String
 addBrackets x y = if x
@@ -61,10 +67,11 @@ addBrackets x y = if x
     else " " ++ s ++ " " where
         s = show y
 
+-- acceptable Q F
 acceptable :: [Int] -> [Int] -> [Bool]
-acceptable _ [] = []
-acceptable q (x:xs) = elem x q : acceptable q xs
-
+-- acceptable [] _ = []
+-- acceptable (x:xs) f = elem x f : acceptable xs f
+acceptable q f = map (\x -> elem x f) q
 
 toS_DFA :: [String] -> DFA
 toS_DFA s =
