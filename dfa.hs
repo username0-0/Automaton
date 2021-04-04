@@ -18,13 +18,15 @@ import Data.Char(intToDigit)
 
 
 type DTrans = [[Int]]
-type InChar = Int
 type SimpleDFAState = Int
+type SimpleDFAFState = Int
+
+type InputCode = Int
 
 data DFA =
     S_DFA
     { s_Q :: [SimpleDFAState]
-    , s_sigma :: [InChar]
+    , s_sigma :: [InputCode]
     , delta :: DTrans
     , q0 :: SimpleDFAState
     , s_F :: [SimpleDFAState]
@@ -89,7 +91,7 @@ data Config =
     Config
     { dfa :: DFA
     , mark :: Int
-    , input :: [InChar]
+    , input :: [InputCode]
     }
 
 instance Show Config where
@@ -99,20 +101,26 @@ instance Show Config where
         , show s
         ]
 
-
 -- Config
 -- 
 
+-- x <- Q
+-- x <- [1..n]
 -- markCurrentState Q F x
 -- putStrLn $ markCurrentState [1..5] [2,5] 2
 --        3
 --  1 [2] 3  4 [5]
+-- but it works when x > n
+-- *Main> putStrLn $ markCurrentState [1..5] [2,5] 13
+--                13
+-- 1 [2] 3  4 [5]
 
-markCurrentState :: [Int] -> [Int] -> Int -> String
+
+markCurrentState :: [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
 markCurrentState q f x = unlines
     [ concat
         [ replicate (length $ markFStates (take (x-1) q) []) ' '
-        , addBrackets True x
+        , addBrackets (elem x f) x
         ]
     , b s
     ] where
@@ -136,9 +144,9 @@ acceptable :: [Int] -> [Int] -> [Bool]
 acceptable q f = map (\x -> elem x f) q
 
 
-    
-dChangeState :: SimpleDFAState -> DTrans -> InChar -> SimpleDFAState
-dChangeState x d y = (!!y) . (!!x) $ d
+
+dChangeState :: SimpleDFAState -> DTrans -> InputCode -> SimpleDFAState
+dChangeState x d y = (!!y) . (!!(x-1)) $ d
 
 -- step :: Config -> Config
 
