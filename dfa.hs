@@ -12,9 +12,9 @@ import Data.Char(intToDigit)
 
 
 -- S_DFA simple DFA
--- Q :: [Int] = [1..s_Q] does not have a name::String for each state
--- ∑ :: [Int] = [0..n] does not have a name::Char for each char
--- "2 [0..2] [[2,2,2],[1,1,1]] 1 [2] [0,1,2,1,2,1,0,1,0,2]
+-- Q :: [Int] = [1..n1] does not have a name::String for each state
+-- ∑ :: [Int] = [0..n2] does not have a name::Char for each char
+
 
 type DTrans = [[Int]]
 type InChar = Int
@@ -29,6 +29,9 @@ data DFA =
     , s_F :: [SimpleDFAState]
     } deriving (Show)
 
+-- *Main> S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
+-- S_DFA {s_Q = [1,2], s_sigma = [0,1], delta = [[2,1],[1,2]],
+-- q0 = 1, s_F = [2]}
 -- check
 
 
