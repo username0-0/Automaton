@@ -1,4 +1,4 @@
-import Data.Char(intToDigit)
+-- import Data.Char(intToDigit)
 
 -- (Q, ∑, \delta, q0, F)
 -- check format
@@ -9,7 +9,8 @@ import Data.Char(intToDigit)
 -- ∑ :: [Char] = ['0', '1']
 -- Set or List ?
 -- ["q1", "q2", "q3", "q4"] ['0', '1'] [[1,2],[2,3],[3,4],[4,1]] 0 [2,4]
--- not implemented yet. use S_DFA
+-- not implemented yet.
+-- use S_DFA
 
 
 -- S_DFA simple DFA
@@ -69,9 +70,10 @@ toS_DFA s =
     , q0        = read $ s !! 3
     , s_F       = read $ s !! 4
     }
-    
-dTransToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
-dTransToS_DFA d x0 f =
+
+-- dDeltaToS_DFA get info from S_DFA's delta transition function
+dDeltaToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
+dDeltaToS_DFA d x0 f =
     S_DFA
     { s_Q = [1..n1]
     , s_sigma = [1..n2]
@@ -81,8 +83,8 @@ dTransToS_DFA d x0 f =
     } where
         n1 = length d
         n2 = length $ d!!0
-dTransToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
-dTransToS_DFA1 d f = dTransToS_DFA d 1 f
+dDeltaToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
+dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 
 -- check format ?
 
@@ -90,14 +92,15 @@ dTransToS_DFA1 d f = dTransToS_DFA d 1 f
 data Config =
     Config
     { dfa :: DFA
-    , mark :: Int
+    , currentState :: SimpleDFAState
     , input :: [InputCode]
     }
 
 instance Show Config where
-    show Config{ dfa = d, mark = x, input = s} = unlines $
+    show Config{ dfa = d, currentState = x, input = s} = unlines $
         [ show d
         , markCurrentState (s_Q d) (s_F d) x
+        , "input:"
         , show s
         ]
 
@@ -110,26 +113,29 @@ instance Show Config where
 -- putStrLn $ markCurrentState [1..5] [2,5] 2
 --        3
 --  1 [2] 3  4 [5]
--- but it works when x > n
+-- when x > n
 -- *Main> putStrLn $ markCurrentState [1..5] [2,5] 13
 --                13
 -- 1 [2] 3  4 [5]
 
 
-markCurrentState :: [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
+markCurrentState ::
+    [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
 markCurrentState q f x = unlines
-    [ concat
+    [ "CurrentState: "
+    , concat
         [ replicate (length $ markFStates (take (x-1) q) []) ' '
         , addBrackets (elem x f) x
         ]
+    , "ls-states:    "
     , b s
     ] where
         s = markFStates q f
         b y = y
 
--- markFStates Q F
-markFStates :: [Int] -> [Int] -> String
-markFStates q f = concat $ zipWith addBrackets (acceptable q f) q
+
+markFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> String
+markFStates q f = concat $ zipWith addBrackets (forFStates q f) q
 
 addBrackets :: Bool -> Int -> String
 addBrackets x y = if x
@@ -137,19 +143,37 @@ addBrackets x y = if x
     else " " ++ s ++ " " where
         s = show y
 
--- acceptable Q F
-acceptable :: [Int] -> [Int] -> [Bool]
--- acceptable [] _ = []
--- acceptable (x:xs) f = elem x f : acceptable xs f
-acceptable q f = map (\x -> elem x f) q
+forFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> [Bool]
+-- forFStates [] _ = []
+-- forFStates (x:xs) f = elem x f : forFStates xs f
+forFStates q f = map (\x -> elem x f) q
 
 
+
+initConfig :: DFA -> [InputCode] -> Config
+initConfig d s =
+    Config
+    { dfa = d
+    , currentState = q0 d
+    , input = s
+    }
 
 dChangeState :: SimpleDFAState -> DTrans -> InputCode -> SimpleDFAState
 dChangeState x d y = (!!y) . (!!(x-1)) $ d
 
--- step :: Config -> Config
-
+stepRun :: Config -> Config
+stepRun Config{ dfa = d, currentState = x, input = []} =
+    Config
+        { dfa = d
+        , currentState = x
+        , input = []
+        }
+stepRun Config{ dfa = d, currentState = x, input = (c:cs)} =
+    Config
+        { dfa = d
+        , currentState = dChangeState x (delta d) c
+        , input = cs
+        }
 
 
 
