@@ -8,38 +8,47 @@ import Data.Char(intToDigit)
 -- Q :: [String] = ["q1", "q2", "q3", "q4"]
 -- ∑ :: [Char] = ['0', '1']
 -- ["q1", "q2", "q3", "q4"] ['0', '1'] [[]] 0 [2,4]
--- not implemented yet, use S_DFA instead
+-- not implemented yet. use S_DFA
 
 
 -- S_DFA simple DFA
 -- Q :: [Int] = [1..s_Q] does not have a name::String for each state
--- ∑ :: [Int] = [0..s_sigma] does not have a name::Char for each char
--- "2 2 [[2,2,2],[1,1,1]] 1 [2] [0,1,2,1,2,1,0,1,0,2]
+-- ∑ :: [Int] = [0..n] does not have a name::Char for each char
+-- "2 [0..2] [[2,2,2],[1,1,1]] 1 [2] [0,1,2,1,2,1,0,1,0,2]
 
-
+type DTrans = [[Int]]
+type InChar = Int
+type SimpleDFAState = Int
 
 data DFA =
     S_DFA
-    { s_Q :: Int
-    , s_sigma :: Int
-    , delta :: [[Int]]
-    , q0 :: Int
-    , s_F :: [Int]
+    { s_Q :: [SimpleDFAState]
+    , s_sigma :: [InChar]
+    , delta :: DTrans
+    , q0 :: SimpleDFAState
+    , s_F :: [SimpleDFAState]
     } deriving (Show)
+
+-- check
+
 
 data Config =
     Config
     { dfa :: DFA
     , mark :: Int
-    , stack :: [Int]
+    , input :: [InChar]
     }
 
 instance Show Config where
-    show Config{ dfa = d, mark = x, stack = s} = unlines $
+    show Config{ dfa = d, mark = x, input = s} = unlines $
         [ show d
-        , markCurrentState [1..(s_Q d)] (s_F d) x
+        , markCurrentState (s_Q d) (s_F d) x
         , show s
         ]
+
+
+-- Config
+-- 
 
 -- markCurrentState Q F x
 -- putStrLn $ markCurrentState [1..5] [2,5] 2
@@ -83,26 +92,24 @@ toS_DFA s =
     , s_F       = read $ s !! 4
     }
     
-
-toS_DFA' :: String -> String -> String -> String -> String -> DFA
-toS_DFA' a0 a1 a2 a3 a4 =
+dTransToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
+dTransToS_DFA d x0 f =
     S_DFA
-    { s_Q       = read a0
-    , s_sigma   = read a1
-    , delta     = read a2
-    , q0        = read a3
-    , s_F       = read a4
-    }
+    { s_Q = [1..n1]
+    , s_sigma = [1..n2]
+    , delta = d
+    , q0 = x0
+    , s_F = f
+    } where
+        n1 = length d
+        n2 = length $ d!!0
+dTransToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
+dTransToS_DFA1 d f = dTransToS_DFA d 1 f
 
-toS_DFA1 :: String -> String -> String -> String -> DFA
-toS_DFA1 a0 a1 a2 a3 =
-    S_DFA
-    { s_Q       = read a0
-    , s_sigma   = read a1
-    , delta     = read a2
-    , q0        = 1
-    , s_F       = read a3
-    }
+    
+dChangeState :: SimpleDFAState -> DTrans -> InChar -> SimpleDFAState
+dChangeState x d y = (!!y) . (!!x) $ d
+
 -- step :: Config -> Config
 
 
@@ -143,4 +150,24 @@ feedArgs f (x:xs) = feedArgs (f x) xs
 }
 
 
+toS_DFA' :: String -> String -> String -> String -> String -> DFA
+toS_DFA' a0 a1 a2 a3 a4 =
+    S_DFA
+    { s_Q       = read a0
+    , s_sigma   = read a1
+    , delta     = read a2
+    , q0        = read a3
+    , s_F       = read a4
+    }
+
+toS_DFA1 :: String -> String -> String -> String -> DFA
+toS_DFA1 a0 a1 a2 a3 =
+    S_DFA
+    { s_Q       = read a0
+    , s_sigma   = read a1
+    , delta     = read a2
+    , q0        = 1
+    , s_F       = read a3
+    }
+    
 -}
