@@ -7,7 +7,8 @@ import Data.Char(intToDigit)
 
 -- Q :: [String] = ["q1", "q2", "q3", "q4"]
 -- ∑ :: [Char] = ['0', '1']
--- ["q1", "q2", "q3", "q4"] ['0', '1'] [[]] 0 [2,4]
+-- Set or List ?
+-- ["q1", "q2", "q3", "q4"] ['0', '1'] [[1,2],[2,3],[3,4],[4,1]] 0 [2,4]
 -- not implemented yet. use S_DFA
 
 
@@ -29,10 +30,59 @@ data DFA =
     , s_F :: [SimpleDFAState]
     } deriving (Show)
 
+
+-- example
 -- *Main> S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
 -- S_DFA {s_Q = [1,2], s_sigma = [0,1], delta = [[2,1],[1,2]],
 -- q0 = 1, s_F = [2]}
--- check
+
+
+-- GNFA
+-- >[q_start]  -e->  [1]  <]1
+--                  | ^
+--                  | |
+--                  0 0
+--                  | |
+--                  v |
+-- ([q_f])   <-e-   [2]  <]1
+
+-- remove state [1]
+
+-- >[q_start]  -e1*0
+--                  |
+--                  |
+--                  |
+--                 |
+--                |
+-- ([q_f]) <-e-  [2]  <]01*0
+
+-- regExp = "1*0(01*0)*"
+
+toS_DFA :: [String] -> DFA
+toS_DFA s =
+    S_DFA
+    { s_Q       = read $ s !! 0
+    , s_sigma   = read $ s !! 1
+    , delta     = read $ s !! 2
+    , q0        = read $ s !! 3
+    , s_F       = read $ s !! 4
+    }
+    
+dTransToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
+dTransToS_DFA d x0 f =
+    S_DFA
+    { s_Q = [1..n1]
+    , s_sigma = [1..n2]
+    , delta = d
+    , q0 = x0
+    , s_F = f
+    } where
+        n1 = length d
+        n2 = length $ d!!0
+dTransToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
+dTransToS_DFA1 d f = dTransToS_DFA d 1 f
+
+-- check format ?
 
 
 data Config =
@@ -85,29 +135,6 @@ acceptable :: [Int] -> [Int] -> [Bool]
 -- acceptable (x:xs) f = elem x f : acceptable xs f
 acceptable q f = map (\x -> elem x f) q
 
-toS_DFA :: [String] -> DFA
-toS_DFA s =
-    S_DFA
-    { s_Q       = read $ s !! 0
-    , s_sigma   = read $ s !! 1
-    , delta     = read $ s !! 2
-    , q0        = read $ s !! 3
-    , s_F       = read $ s !! 4
-    }
-    
-dTransToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
-dTransToS_DFA d x0 f =
-    S_DFA
-    { s_Q = [1..n1]
-    , s_sigma = [1..n2]
-    , delta = d
-    , q0 = x0
-    , s_F = f
-    } where
-        n1 = length d
-        n2 = length $ d!!0
-dTransToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
-dTransToS_DFA1 d f = dTransToS_DFA d 1 f
 
     
 dChangeState :: SimpleDFAState -> DTrans -> InChar -> SimpleDFAState
