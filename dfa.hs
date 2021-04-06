@@ -205,15 +205,25 @@ showHistory cs = unlines . map ((!!2) . lines . show) $ cs
 
 
 -- options
--- dCross :: -> DFA -> DFA -> DFA
 
--- dEqualEmpty :: DFA -> Bool
 
+-- dIntersec :: DFA -> DFA -> DFA
+-- dIntersec = dDeltaToS_DFA tfs f where
+--     tfs =
+--     f =
+
+-- dUnion :: DFA -> DFA -> DFA
+
+-- dDiff :: DFA -> DFA -> DFA
+
+-- test if a DFA recognize an empty set
+-- dRecEmpty :: DFA -> Bool
+
+-- dEq :: DFA -> DFA -> Bool
+-- dEq dfa1 dfa2 = dRecEmpty $ dDiff dfa1 dfa2
 
 -- dToGNFA :: DFA -> ?
 -- After fininshing NFA part
-
-
 -- dToRegExp :: DFA -> String
 
 
