@@ -99,10 +99,15 @@ data Config =
 instance Show Config where
     show Config{ dfa = d, currentState = x, input = s} = unlines $
         [ show d
-        , markCurrentState (s_Q d) (s_F d) x
+        , "CurrentState: "
+        , markCurrentState q f x
+        , "ls-states:    "
+        , markFStates q f
         , "input:"
         , show s
-        ]
+        ] where
+            q = s_Q d
+            f = s_F d
 
 
 -- x <- Q
@@ -119,17 +124,11 @@ instance Show Config where
 
 markCurrentState ::
     [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
-markCurrentState q f x = unlines
-    [ "CurrentState: "
-    , concat
-        [ replicate (length $ markFStates (take (x-1) q) []) ' '
-        , addBrackets (elem x f) x
-        ]
-    , "ls-states:    "
-    , b s
-    ] where
-        s = markFStates q f
-        b y = y
+markCurrentState q f x = concat
+    [ replicate (length $ markFStates (take (x-1) q) []) ' '
+    , addBrackets (elem x f) x
+    ]
+
 
 
 markFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> String
@@ -189,9 +188,26 @@ dAccept d cs = dConfigAccept $ initConfig d cs
 
 
 
+showHistory :: [Config] -> String
+showHistory cs = unlines . map ((!!2) . lines . show) $ cs
+
+-- Example
+-- d = S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
+-- c = initConfig d [0,0,0,1,0,1,0,0,0,1,1,0]
+-- putStrLn $ showHistory . map (sequenceRun c) $ [0..11]
+
+
 {-
 
+dSimulate :: DFA -> [InputCode] -> IO()
 
+
+
+
+
+
+
+recycle bin
 
 getQ :: [String] -> [(Int, Char)]
 getQ s = zip [0..] s
