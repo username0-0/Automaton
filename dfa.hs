@@ -104,8 +104,6 @@ instance Show Config where
         , show s
         ]
 
--- Config
--- 
 
 -- x <- Q
 -- x <- [1..n]
@@ -183,7 +181,11 @@ sequenceRun c n
 
 dConfigAccept :: Config -> Bool
 dConfigAccept c@Config{ dfa = d, currentState = x, input = []} = elem x (s_F d)
-dConfigAccept (Config d x (c:cs)) = dAccept (stepRun c)
+dConfigAccept c = dConfigAccept (stepRun c)
+-- not sequenceRun c (length $ input d)
+
+dAccept :: DFA -> [InputCode] -> Bool
+dAccept d cs = dConfigAccept $ initConfig d cs
 
 
 
