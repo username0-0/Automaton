@@ -158,8 +158,8 @@ initConfig d s =
     , input = s
     }
 
-dChangeState :: SimpleDFAState -> DTrans -> InputCode -> SimpleDFAState
-dChangeState x d y = (!!y) . (!!(x-1)) $ d
+dChangeState :: DTrans -> SimpleDFAState -> InputCode -> SimpleDFAState
+dChangeState d x y = (!!y) . (!!(x-1)) $ d
 
 stepRun :: Config -> Config
 stepRun Config{ dfa = d, currentState = x, input = []} =
@@ -168,35 +168,32 @@ stepRun Config{ dfa = d, currentState = x, input = []} =
         , currentState = x
         , input = []
         }
-stepRun Config{ dfa = d, currentState = x, input = (c:cs)} =
+stepRun (Config d x (c:cs)) =
     Config
         { dfa = d
-        , currentState = dChangeState x (delta d) c
+        , currentState = dChangeState (delta d) x c
         , input = cs
         }
+
+sequenceRun :: Config -> Int -> Config
+sequenceRun c@Config{ dfa = d, currentState = x, input = []} _ = c
+sequenceRun c n
+    | n < 1 = c
+    | otherwise = sequenceRun (stepRun c) (n-1)
+
+dConfigAccept :: Config -> Bool
+dConfigAccept c@Config{ dfa = d, currentState = x, input = []} = elem x (s_F d)
+dConfigAccept (Config d x (c:cs)) = dAccept (stepRun c)
 
 
 
 {-
 
 
-getInput :: String -> String
-getInput s = s!!5
 
+getQ :: [String] -> [(Int, Char)]
+getQ s = zip [0..] s
 
-getQ :: String -> [(Int, Char)]
-getQ s = zip [0..] $ s
-
-steps :: Config -> Int -> IO()
-steps x 0 = show x
-steps x n = do
-    show x
-    steps (step x) n-1
-
-simulate :: Config -> IO()
-simulate x@ =
-        show x
-        simulate . step $ x
 
 why we dont have this function?
 feedArgs f [] = f
