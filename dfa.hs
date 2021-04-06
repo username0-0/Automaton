@@ -1,4 +1,4 @@
--- import Data.Char(intToDigit)
+-- make it a module
 
 -- (Q, ∑, \delta, q0, F)
 -- check format
@@ -88,6 +88,7 @@ dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 
 -- check format ?
 
+-- dToString :: DFA -> String
 
 data Config =
     Config
@@ -197,6 +198,25 @@ showHistory cs = unlines . map ((!!2) . lines . show) $ cs
 -- putStrLn $ showHistory . map (sequenceRun c) $ [0..11]
 
 
+
+-- IO
+-- read from args
+-- read from files
+
+
+-- options
+-- dCross :: -> DFA -> DFA -> DFA
+
+-- dEqualEmpty :: DFA -> Bool
+
+
+-- dToGNFA :: DFA -> ?
+-- After fininshing NFA part
+
+
+-- dToRegExp :: DFA -> String
+
+
 {-
 
 dSimulate :: DFA -> [InputCode] -> IO()
@@ -208,6 +228,7 @@ dSimulate :: DFA -> [InputCode] -> IO()
 
 
 recycle bin
+-- import Data.Char(intToDigit)
 
 getQ :: [String] -> [(Int, Char)]
 getQ s = zip [0..] s
