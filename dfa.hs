@@ -98,39 +98,55 @@ data Config =
     }
 
 instance Show Config where
-    show Config{ dfa = d, currentState = x, input = s} = unlines $
+    show c@Config{ dfa = d, currentState = x, input = w} = unlines $
         [ show d
         , "CurrentState: "
-        , markCurrentState q f x
+        , markCurrentState' q f x
         , "ls-states:    "
         , markFStates q f
         , "input:"
-        , show s
+        , show w
         ] where
             q = s_Q d
             f = s_F d
 
 
+markCurrentState :: Config -> String
+markCurrentState
+    Config
+    { dfa = d
+    , currentState = x
+    , input = _
+    }
+    = markCurrentState' (s_Q d) (s_F d) x
+
 -- x <- Q
 -- x <- [1..n]
--- markCurrentState Q F x
+-- markCurrentState' Q F x
 -- putStrLn $ markCurrentState [1..5] [2,5] 2
 --        3
 --  1 [2] 3  4 [5]
 -- when x > n
--- *Main> putStrLn $ markCurrentState [1..5] [2,5] 13
+-- *Main> putStrLn $ markCurrentState' [1..5] [2,5] 13
 --                13
 -- 1 [2] 3  4 [5]
 
 
-markCurrentState ::
+markCurrentState' ::
     [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
-markCurrentState q f x = concat
+markCurrentState' q f x = concat
     [ replicate (length $ markFStates (take (x-1) q) []) ' '
     , addBrackets (elem x f) x
     ]
 
-
+lsStates :: Config -> String
+lsStates
+    Config
+    { dfa = d
+    , currentState = x
+    , input = _
+    }
+    = markFStates (s_Q d) (s_F d)
 
 markFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> String
 markFStates q f = concat $ zipWith addBrackets (forFStates q f) q
@@ -190,7 +206,8 @@ dAccept d cs = dConfigAccept $ initConfig d cs
 
 
 showHistory :: [Config] -> String
-showHistory cs = unlines . map ((!!2) . lines . show) $ cs
+-- showHistory cs = unlines . map ((!!2) . lines . show) $ cs
+showHistory cs = unlines $ map markCurrentState cs
 
 -- Example
 -- d = S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
@@ -206,10 +223,14 @@ showHistory cs = unlines . map ((!!2) . lines . show) $ cs
 
 -- options
 
+-- [(a,b) | a <- [1..2], b <- [1..3]]
+
+-- crossTrans :: DTrans -> DTrans -> DTrans
+-- crossTrans t1 t2 =
 
 -- dIntersec :: DFA -> DFA -> DFA
--- dIntersec = dDeltaToS_DFA tfs f where
---     tfs =
+-- dIntersec dfa1 dfa2 = dDeltaToS_DFA tfs f where
+--     tfs = crossTrans (delta dfa1) (delta dfa2)
 --     f =
 
 -- dUnion :: DFA -> DFA -> DFA
@@ -233,7 +254,15 @@ dSimulate :: DFA -> [InputCode] -> IO()
 
 
 
-
+f a b c d = y
+can be written like this
+f
+    a
+    b
+    c
+    d
+    =
+    y
 
 
 
