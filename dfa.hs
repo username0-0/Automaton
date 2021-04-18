@@ -19,22 +19,24 @@
 
 
 type DTrans = [[Int]]
-type SimpleDFAState = Int
-type SimpleDFAFState = Int
-
+type SimpleState = Int
+type SimpleFState = Int
+type SimpleStartState = Int
 type InputCode = Int
+-- :t in ghci
+
 
 data DFA =
     S_DFA
-    { s_Q :: [SimpleDFAState]
+    { s_Q :: [SimpleState]
     , s_sigma :: [InputCode]
     , delta :: DTrans
-    , q0 :: SimpleDFAState
-    , s_F :: [SimpleDFAState]
+    , q0 :: SimpleStartState
+    , s_F :: [SimpleState]
     } deriving (Show)
 
 
--- example
+-- Example
 -- *Main> S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
 -- S_DFA {s_Q = [1,2], s_sigma = [0,1], delta = [[2,1],[1,2]],
 -- q0 = 1, s_F = [2]}
@@ -62,29 +64,41 @@ data DFA =
 -- regExp = "1*0(01*0)*"
 
 toS_DFA :: [String] -> DFA
-toS_DFA s =
-    S_DFA
-    { s_Q       = read $ s !! 0
-    , s_sigma   = read $ s !! 1
-    , delta     = read $ s !! 2
-    , q0        = read $ s !! 3
-    , s_F       = read $ s !! 4
-    }
+toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
+    [a1, a2, a3, a4, a5] = [ a | a <- s]
+-- pattern match
+-- is the "take 5" necessary here?
+-- toS_DFA s =
+--     S_DFA
+--     { s_Q       = read $ s !! 0
+--     , s_sigma   = read $ s !! 1
+--     , delta     = read $ s !! 2
+--     , q0        = read $ s !! 3
+--     , s_F       = read $ s !! 4
+--     }
+-- Example
+-- s = take 5 . words $ "[1,2] [0,1] [[2,1],[1,2]] 1 [2] [0,1,0,0,1]"
+-- toS_DFA s
+
 
 -- dDeltaToS_DFA get info from S_DFA's delta transition function
-dDeltaToS_DFA :: DTrans -> SimpleDFAState -> [SimpleDFAState] -> DFA
+dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleState] -> DFA
 dDeltaToS_DFA d x0 f =
     S_DFA
     { s_Q = [1..n1]
-    , s_sigma = [1..n2]
+    , s_sigma = [0..(n2-1)]
     , delta = d
     , q0 = x0
     , s_F = f
     } where
         n1 = length d
         n2 = length $ d!!0
-dDeltaToS_DFA1 :: DTrans -> [SimpleDFAState] -> DFA
+
+dDeltaToS_DFA1 :: DTrans -> [SimpleState] -> DFA
 dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
+-- Example
+-- (dtfs1, f1) = ([[2,1],[1,2]], [2])
+-- dDeltaToS_DFA1 dtfs1 f1
 
 -- check format ?
 
@@ -93,7 +107,7 @@ dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 data Config =
     Config
     { dfa :: DFA
-    , currentState :: SimpleDFAState
+    , currentState :: SimpleState
     , input :: [InputCode]
     }
 
@@ -133,7 +147,7 @@ markCurrentState
 
 
 markCurrentState' ::
-    [SimpleDFAState] -> [SimpleDFAFState] -> SimpleDFAState -> String
+    [SimpleState] -> [SimpleFState] -> SimpleState -> String
 markCurrentState' q f x = concat
     [ replicate (length $ markFStates (take (x-1) q) []) ' '
     , addBrackets (elem x f) x
@@ -148,7 +162,7 @@ lsStates
     }
     = markFStates (s_Q d) (s_F d)
 
-markFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> String
+markFStates :: [SimpleState] -> [SimpleFState] -> String
 markFStates q f = concat $ zipWith addBrackets (forFStates q f) q
 
 addBrackets :: Bool -> Int -> String
@@ -157,7 +171,7 @@ addBrackets x y = if x
     else " " ++ s ++ " " where
         s = show y
 
-forFStates :: [SimpleDFAState] -> [SimpleDFAFState] -> [Bool]
+forFStates :: [SimpleState] -> [SimpleFState] -> [Bool]
 -- forFStates [] _ = []
 -- forFStates (x:xs) f = elem x f : forFStates xs f
 forFStates q f = map (\x -> elem x f) q
@@ -172,7 +186,7 @@ initConfig d s =
     , input = s
     }
 
-dChangeState :: DTrans -> SimpleDFAState -> InputCode -> SimpleDFAState
+dChangeState :: DTrans -> SimpleState -> InputCode -> SimpleState
 dChangeState d x y = (!!y) . (!!(x-1)) $ d
 
 stepRun :: Config -> Config
@@ -221,9 +235,11 @@ showHistory cs = unlines $ map markCurrentState cs
 -- read from files
 
 
--- options
+-- operations for dfa
 
 -- [(a,b) | a <- [1..2], b <- [1..3]]
+-- d_1 = S_DFA [1,2,3] [0,1] [[2,1],[1,3],[1,3]] 1 [2]
+
 
 -- crossTrans :: DTrans -> DTrans -> DTrans
 -- crossTrans t1 t2 =
@@ -247,6 +263,18 @@ showHistory cs = unlines $ map markCurrentState cs
 -- After fininshing NFA part
 -- dToRegExp :: DFA -> String
 
+
+-- operations for regular expression
+-- type regExp = String
+-- newType regExp = String
+-- use type or newType ?
+
+-- union
+-- star
+-- concat
+-- regular expression is closed under diff operation
+
+-- to check whether a regExp is 'star-closed' is P
 
 {-
 
