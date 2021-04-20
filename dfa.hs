@@ -32,7 +32,7 @@ data DFA =
     , s_sigma :: [InputCode]
     , delta :: DTrans
     , q0 :: SimpleStartState
-    , s_F :: [SimpleState]
+    , s_F :: [SimpleFState]
     } deriving (Show)
 
 
@@ -82,7 +82,7 @@ toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
 
 
 -- dDeltaToS_DFA get info from S_DFA's delta transition function
-dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleState] -> DFA
+dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> DFA
 dDeltaToS_DFA d x0 f =
     S_DFA
     { s_Q = [1..n1]
@@ -94,7 +94,7 @@ dDeltaToS_DFA d x0 f =
         n1 = length d
         n2 = length $ d!!0
 
-dDeltaToS_DFA1 :: DTrans -> [SimpleState] -> DFA
+dDeltaToS_DFA1 :: DTrans -> [SimpleFState] -> DFA
 dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 -- Example
 -- (dtfs1, f1) = ([[2,1],[1,2]], [2])
