@@ -5,6 +5,18 @@
 -- ?
 
 
+data DFA a b =
+    ToDFA
+    { states :: [a]
+    , sigma :: [b]
+    , transF :: DTrans
+    , startIndex :: SimpleStartState
+    , finalStates :: [a]
+    } deriving (Show)
+
+
+
+
 -- Q :: [String] = ["q1", "q2", "q3", "q4"]
 -- ∑ :: [Char] = ['0', '1']
 -- Set or List ?
@@ -13,7 +25,7 @@
 -- use S_DFA
 
 
--- S_DFA simple DFA
+-- S_DFA simpleDFA
 -- Q :: [Int] = [1..n1] does not have a name::String for each state
 -- ∑ :: [Int] = [0..n2] does not have a name::Char for each char
 
@@ -23,10 +35,11 @@ type SimpleState = Int
 type SimpleFState = Int
 type SimpleStartState = Int
 type InputCode = Int
+-- type Language = [String]
+-- not having Language type until importing modules for Set
 -- :t in ghci
 
-
-data DFA =
+data MyDFA =
     S_DFA
     { s_Q :: [SimpleState]
     , s_sigma :: [InputCode]
@@ -63,7 +76,7 @@ data DFA =
 
 -- regExp = "1*0(01*0)*"
 
-toS_DFA :: [String] -> DFA
+toS_DFA :: [String] -> MyDFA
 toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
     [a1, a2, a3, a4, a5] = [ a | a <- s]
 -- pattern match
@@ -82,7 +95,7 @@ toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
 
 
 -- dDeltaToS_DFA get info from S_DFA's delta transition function
-dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> DFA
+dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> MyDFA
 dDeltaToS_DFA d x0 f =
     S_DFA
     { s_Q = [1..n1]
@@ -94,7 +107,7 @@ dDeltaToS_DFA d x0 f =
         n1 = length d
         n2 = length $ d!!0
 
-dDeltaToS_DFA1 :: DTrans -> [SimpleFState] -> DFA
+dDeltaToS_DFA1 :: DTrans -> [SimpleFState] -> MyDFA
 dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 -- Example
 -- (dtfs1, f1) = ([[2,1],[1,2]], [2])
@@ -102,17 +115,17 @@ dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
 
 -- check format ?
 
--- dToString :: DFA -> String
+-- dToString :: MyDFA -> String
 
-data Config =
-    Config
-    { dfa :: DFA
+data MyDFAConfig =
+    ToConfig
+    { dfa :: MyDFA
     , currentState :: SimpleState
     , input :: [InputCode]
     }
 
-instance Show Config where
-    show c@Config{ dfa = d, currentState = x, input = w} = unlines $
+instance Show MyDFAConfig where
+    show c@ToConfig{ dfa = d, currentState = x, input = w} = unlines $
         [ show d
         , "CurrentState: "
         , markCurrentState' q f x
@@ -125,9 +138,9 @@ instance Show Config where
             f = s_F d
 
 
-markCurrentState :: Config -> String
+markCurrentState :: MyDFAConfig -> String
 markCurrentState
-    Config
+    ToConfig
     { dfa = d
     , currentState = x
     , input = _
@@ -153,11 +166,11 @@ markCurrentState' q f x = concat
     , addBrackets (elem x f) x
     ]
 
-lsStates :: Config -> String
+lsStates :: MyDFAConfig -> String
 lsStates
-    Config
+    ToConfig
     { dfa = d
-    , currentState = x
+    , currentState = _
     , input = _
     }
     = markFStates (s_Q d) (s_F d)
@@ -166,10 +179,11 @@ markFStates :: [SimpleState] -> [SimpleFState] -> String
 markFStates q f = concat $ zipWith addBrackets (forFStates q f) q
 
 addBrackets :: Bool -> Int -> String
-addBrackets x y = if x
-    then "[" ++ s ++ "]"
-    else " " ++ s ++ " " where
-        s = show y
+addBrackets x y
+    | x = "[" ++ s ++ "]"
+    | otherwise = " " ++ s ++ " "
+    where
+    s = show y
 
 forFStates :: [SimpleState] -> [SimpleFState] -> [Bool]
 -- forFStates [] _ = []
@@ -178,48 +192,68 @@ forFStates q f = map (\x -> elem x f) q
 
 
 
-initConfig :: DFA -> [InputCode] -> Config
+initConfig :: MyDFA -> [InputCode] -> MyDFAConfig
 initConfig d s =
-    Config
+    ToConfig
     { dfa = d
     , currentState = q0 d
     , input = s
     }
 
-dChangeState :: DTrans -> SimpleState -> InputCode -> SimpleState
-dChangeState d x y = (!!y) . (!!(x-1)) $ d
+dChangeState :: DTrans -> InputCode -> SimpleState -> SimpleState
+dChangeState d nc nq = (!!nc) . (!!(nq-1)) $ d
 
-stepRun :: Config -> Config
-stepRun Config{ dfa = d, currentState = x, input = []} =
-    Config
+stepRun :: MyDFAConfig -> MyDFAConfig
+{-
+stepRun ToConfig{ dfa = d, currentState = x, input = []} = ToConfig
         { dfa = d
         , currentState = x
         , input = []
         }
-stepRun (Config d x (c:cs)) =
-    Config
+stepRun (ToConfig d x (c:cs)) = ToConfig
         { dfa = d
-        , currentState = dChangeState (delta d) x c
+        , currentState = dChangeState (delta d) c x
         , input = cs
         }
+-}
+stepRun c@ToConfig{ dfa = d, currentState = x, input = w@(s:ss)}
+    | w == [] = c
+    | otherwise = ToConfig
+        { dfa = d
+        , currentState = f x
+        , input = ss
+        }
+        where f = dChangeState (delta d) s
 
-sequenceRun :: Config -> Int -> Config
-sequenceRun c@Config{ dfa = d, currentState = x, input = []} _ = c
+sequenceRun :: MyDFAConfig -> Int -> MyDFAConfig
+sequenceRun c@ToConfig{ dfa = d, currentState = x, input = []} _ = c
 sequenceRun c n
     | n < 1 = c
     | otherwise = sequenceRun (stepRun c) (n-1)
 
-dConfigAccept :: Config -> Bool
-dConfigAccept c@Config{ dfa = d, currentState = x, input = []} = elem x (s_F d)
-dConfigAccept c = dConfigAccept (stepRun c)
+dFinalAccept :: MyDFAConfig -> Bool
+dFinalAccept c@ToConfig{ dfa = d, currentState = x, input = w}
+    | w == [] = elem x (s_F d)
+    | otherwise = dFinalAccept (stepRun c)
 -- not sequenceRun c (length $ input d)
 
-dAccept :: DFA -> [InputCode] -> Bool
-dAccept d cs = dConfigAccept $ initConfig d cs
+
+dAccept :: MyDFA -> [InputCode] -> Bool
+dAccept d w = dFinalAccept $ initConfig d w
+
+
+dCurrentStateAccept (d, x) = elem x (s_F d)
+dAccept' d w = dCurrentStateAccept $ final
+    where
+    final = foldr f (d,q0 d) w
+        where f s (d, x) = (d, dChangeState (delta d) s x)
+-- foldr :: (a -> b -> b) -> b -> [a] -> b
+-- b :: (dfa, x)
 
 
 
-showHistory :: [Config] -> String
+
+showHistory :: [MyDFAConfig] -> String
 -- showHistory cs = unlines . map ((!!2) . lines . show) $ cs
 showHistory cs = unlines $ map markCurrentState cs
 
@@ -244,24 +278,24 @@ showHistory cs = unlines $ map markCurrentState cs
 -- crossTrans :: DTrans -> DTrans -> DTrans
 -- crossTrans t1 t2 =
 
--- dIntersec :: DFA -> DFA -> DFA
+-- dIntersec :: MyDFA -> MyDFA -> MyDFA
 -- dIntersec dfa1 dfa2 = dDeltaToS_DFA tfs f where
 --     tfs = crossTrans (delta dfa1) (delta dfa2)
 --     f =
 
--- dUnion :: DFA -> DFA -> DFA
+-- dUnion :: MyDFA -> MyDFA -> MyDFA
 
--- dDiff :: DFA -> DFA -> DFA
+-- dDiff :: MyDFA -> MyDFA -> MyDFA
 
--- test if a DFA recognize an empty set
--- dRecEmpty :: DFA -> Bool
+-- test if a MyDFA recognize an empty set
+-- dRecEmpty :: MyDFA -> Bool
 
--- dEq :: DFA -> DFA -> Bool
+-- dEq :: MyDFA -> MyDFA -> Bool
 -- dEq dfa1 dfa2 = dRecEmpty $ dDiff dfa1 dfa2
 
--- dToGNFA :: DFA -> ?
+-- dToGNFA :: MyDFA -> ?
 -- After fininshing NFA part
--- dToRegExp :: DFA -> String
+-- dToRegExp :: MyDFA -> String
 
 
 -- operations for regular expression
@@ -278,7 +312,7 @@ showHistory cs = unlines $ map markCurrentState cs
 
 {-
 
-dSimulate :: DFA -> [InputCode] -> IO()
+dSimulate :: MyDFA -> [InputCode] -> IO()
 
 
 
@@ -315,7 +349,7 @@ feedArgs f (x:xs) = feedArgs (f x) xs
 }
 
 
-toS_DFA' :: String -> String -> String -> String -> String -> DFA
+toS_DFA' :: String -> String -> String -> String -> String -> MyDFA
 toS_DFA' a0 a1 a2 a3 a4 =
     S_DFA
     { s_Q       = read a0
@@ -325,7 +359,7 @@ toS_DFA' a0 a1 a2 a3 a4 =
     , s_F       = read a4
     }
 
-toS_DFA1 :: String -> String -> String -> String -> DFA
+toS_DFA1 :: String -> String -> String -> String -> MyDFA
 toS_DFA1 a0 a1 a2 a3 =
     S_DFA
     { s_Q       = read a0
