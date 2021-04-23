@@ -204,18 +204,6 @@ dChangeState :: DTrans -> InputCode -> SimpleState -> SimpleState
 dChangeState d nc nq = (!!nc) . (!!(nq-1)) $ d
 
 stepRun :: MyDFAConfig -> MyDFAConfig
-{-
-stepRun ToConfig{ dfa = d, currentState = x, input = []} = ToConfig
-        { dfa = d
-        , currentState = x
-        , input = []
-        }
-stepRun (ToConfig d x (c:cs)) = ToConfig
-        { dfa = d
-        , currentState = dChangeState (delta d) c x
-        , input = cs
-        }
--}
 stepRun c@ToConfig{ dfa = d, currentState = x, input = w@(s:ss)}
     | w == [] = c
     | otherwise = ToConfig
@@ -237,18 +225,32 @@ dFinalAccept c@ToConfig{ dfa = d, currentState = x, input = w}
     | otherwise = dFinalAccept (stepRun c)
 -- not sequenceRun c (length $ input d)
 
+willFinallyAccept :: MyDFA -> [InputCode] -> Bool
+d `willFinallyAccept` w = dFinalAccept $ initConfig d w
 
-dAccept :: MyDFA -> [InputCode] -> Bool
-dAccept d w = dFinalAccept $ initConfig d w
 
 
-dCurrentStateAccept (d, x) = elem x (s_F d)
-dAccept' d w = dCurrentStateAccept $ final
+
+acceptAtState :: MyDFA -> SimpleState -> Bool
+d `acceptAtState` x = elem x (s_F d)
+
+accept :: MyDFA -> [InputCode] -> Bool
+dfa `accept` w = dfa `acceptAtState` x
     where
-    final = foldr f (d,q0 d) w
+    (d, x) = foldr f (dfa, q0 dfa) w
         where f s (d, x) = (d, dChangeState (delta d) s x)
 -- foldr :: (a -> b -> b) -> b -> [a] -> b
--- b :: (dfa, x)
+-- acc@(d,x) :: b :: (MyDFA, Int)
+-- Example
+-- (dtfs1, f1, w) = ([[2,1],[1,2]], [2], [0,0,0,1,0,1,0,0,0,1,1,0])
+-- testDFA = dDeltaToS_DFA1 dtfs1 f1
+-- testDFA `acceptAtState` 2
+-- testDFA `accept` w
+-- map (testDFA `accept`) [ drop n w | n <- [1..5]]
+
+
+-- wow, MyDFAConfig is not used in `accept`
+-- im practising using foldr
 
 
 
@@ -275,8 +277,12 @@ showHistory cs = unlines $ map markCurrentState cs
 -- d_1 = S_DFA [1,2,3] [0,1] [[2,1],[1,3],[1,3]] 1 [2]
 
 
+-- ∑ d1 == ∑ d2
+-- length (t1!!0) == length (t2!!0)
 -- crossTrans :: DTrans -> DTrans -> DTrans
 -- crossTrans t1 t2 =
+
+
 
 -- dIntersec :: MyDFA -> MyDFA -> MyDFA
 -- dIntersec dfa1 dfa2 = dDeltaToS_DFA tfs f where
