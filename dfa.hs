@@ -1,3 +1,13 @@
+module DFA
+( DFA(..)
+, MyDFA(..)
+, deltaToS_DFA
+, sequenceRun
+, acceptAtState
+, accept
+) where
+
+
 -- make it a module
 
 -- (Q, ∑, \delta, q0, F)
@@ -94,9 +104,9 @@ toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
 -- toS_DFA s
 
 
--- dDeltaToS_DFA get info from S_DFA's delta transition function
-dDeltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> MyDFA
-dDeltaToS_DFA d x0 f =
+-- deltaToS_DFA get info from S_DFA's delta transition function
+deltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> MyDFA
+deltaToS_DFA d x0 f =
     S_DFA
     { s_Q = [1..n1]
     , s_sigma = [0..(n2-1)]
@@ -107,11 +117,11 @@ dDeltaToS_DFA d x0 f =
         n1 = length d
         n2 = length $ d!!0
 
-dDeltaToS_DFA1 :: DTrans -> [SimpleFState] -> MyDFA
-dDeltaToS_DFA1 d f = dDeltaToS_DFA d 1 f
+deltaToS_DFA1 :: DTrans -> [SimpleFState] -> MyDFA
+deltaToS_DFA1 d f = deltaToS_DFA d 1 f
 -- Example
 -- (dtfs1, f1) = ([[2,1],[1,2]], [2])
--- dDeltaToS_DFA1 dtfs1 f1
+-- deltaToS_DFA1 dtfs1 f1
 
 -- check format ?
 
@@ -243,7 +253,7 @@ dfa `accept` w = dfa `acceptAtState` x
 -- acc@(d,x) :: b :: (MyDFA, Int)
 -- Example
 -- (dtfs1, f1, w) = ([[2,1],[1,2]], [2], [0,0,0,1,0,1,0,0,0,1,1,0])
--- testDFA = dDeltaToS_DFA1 dtfs1 f1
+-- testDFA = deltaToS_DFA1 dtfs1 f1
 -- testDFA `acceptAtState` 2
 -- testDFA `accept` w
 -- map (testDFA `accept`) [ drop n w | n <- [1..5]]
@@ -285,7 +295,7 @@ showHistory cs = unlines $ map markCurrentState cs
 
 
 -- dIntersec :: MyDFA -> MyDFA -> MyDFA
--- dIntersec dfa1 dfa2 = dDeltaToS_DFA tfs f where
+-- dIntersec dfa1 dfa2 = deltaToS_DFA tfs f where
 --     tfs = crossTrans (delta dfa1) (delta dfa2)
 --     f =
 
