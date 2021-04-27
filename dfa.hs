@@ -2,11 +2,15 @@ module DFA
 ( DFA(..)
 , MyDFA(..)
 , deltaToS_DFA
-, sequenceRun
+, deltaToS_DFA1
 , acceptAtState
 , accept
+, crossTrans
+{-
+, MyDFAConfig(..)
+, sequenceRun
+-}
 ) where
-
 
 -- make it a module
 
@@ -36,8 +40,8 @@ data DFA a b =
 
 
 -- S_DFA simpleDFA
--- Q :: [Int] = [1..n1] does not have a name::String for each state
--- ∑ :: [Int] = [0..n2] does not have a name::Char for each char
+-- Q :: [Int] = [1..n1]
+-- ∑ :: [Int] = [0..n2]
 
 
 type DTrans = [[Int]]
@@ -91,14 +95,17 @@ toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
     [a1, a2, a3, a4, a5] = [ a | a <- s]
 -- pattern match
 -- is the "take 5" necessary here?
--- toS_DFA s =
---     S_DFA
---     { s_Q       = read $ s !! 0
---     , s_sigma   = read $ s !! 1
---     , delta     = read $ s !! 2
---     , q0        = read $ s !! 3
---     , s_F       = read $ s !! 4
---     }
+-- now i guess it should be [String] -> Maybe MyDFA
+{-
+toS_DFA s =
+    S_DFA
+    { s_Q       = read $ s !! 0
+    , s_sigma   = read $ s !! 1
+    , delta     = read $ s !! 2
+    , q0        = read $ s !! 3
+    , s_F       = read $ s !! 4
+    }
+-}
 -- Example
 -- s = take 5 . words $ "[1,2] [0,1] [[2,1],[1,2]] 1 [2] [0,1,0,0,1]"
 -- toS_DFA s
@@ -119,9 +126,13 @@ deltaToS_DFA d x0 f =
 
 deltaToS_DFA1 :: DTrans -> [SimpleFState] -> MyDFA
 deltaToS_DFA1 d f = deltaToS_DFA d 1 f
--- Example
--- (dtfs1, f1) = ([[2,1],[1,2]], [2])
--- deltaToS_DFA1 dtfs1 f1
+{-
+Example
+(delta_1, fs_1) = ([[2,1],[1,2]], [2])
+(delta_2, fs_2) = ([[1,2],[2,3],[3,3]], [2])
+(d1, d2) = (deltaToS_DFA1 delta_1 fs_1, deltaToS_DFA1 delta_2 fs_2)
+(d1, d2)
+-}
 
 -- check format ?
 
@@ -156,18 +167,18 @@ markCurrentState
     , input = _
     }
     = markCurrentState' (s_Q d) (s_F d) x
-
--- x <- Q
--- x <- [1..n]
--- markCurrentState' Q F x
--- putStrLn $ markCurrentState [1..5] [2,5] 2
---        3
---  1 [2] 3  4 [5]
--- when x > n
--- *Main> putStrLn $ markCurrentState' [1..5] [2,5] 13
---                13
--- 1 [2] 3  4 [5]
-
+-}
+x <- Q
+x <- [1..n]
+markCurrentState' Q F x
+putStrLn $ markCurrentState [1..5] [2,5] 2
+       3
+ 1 [2] 3  4 [5]
+when x > n
+*Main> putStrLn $ markCurrentState' [1..5] [2,5] 13
+               13
+1 [2] 3  4 [5]
+-}
 
 markCurrentState' ::
     [SimpleState] -> [SimpleFState] -> SimpleState -> String
@@ -251,13 +262,14 @@ dfa `accept` w = dfa `acceptAtState` x
         where f s (d, x) = (d, dChangeState (delta d) s x)
 -- foldr :: (a -> b -> b) -> b -> [a] -> b
 -- acc@(d,x) :: b :: (MyDFA, Int)
--- Example
--- (dtfs1, f1, w) = ([[2,1],[1,2]], [2], [0,0,0,1,0,1,0,0,0,1,1,0])
--- testDFA = deltaToS_DFA1 dtfs1 f1
--- testDFA `acceptAtState` 2
--- testDFA `accept` w
--- map (testDFA `accept`) [ drop n w | n <- [1..5]]
-
+{-
+Example
+(delta_1, fs_1, w) = ([[2,1],[1,2]], [2], [0,0,0,1,0,1,0,0,0,1,1,0])
+testDFA = deltaToS_DFA1 delta_1 fs_1
+testDFA `acceptAtState` 2
+testDFA `accept` w
+map (testDFA `accept`) [ drop n w | n <- [1..5]]
+-}
 
 -- wow, MyDFAConfig is not used in `accept`
 -- im practising using foldr
@@ -269,11 +281,12 @@ showHistory :: [MyDFAConfig] -> String
 -- showHistory cs = unlines . map ((!!2) . lines . show) $ cs
 showHistory cs = unlines $ map markCurrentState cs
 
--- Example
--- d = S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
--- c = initConfig d [0,0,0,1,0,1,0,0,0,1,1,0]
--- putStrLn $ showHistory . map (sequenceRun c) $ [0..11]
-
+{-
+Example
+d = S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
+c = initConfig d [0,0,0,1,0,1,0,0,0,1,1,0]
+putStrLn $ showHistory . map (sequenceRun c) $ [0..11]
+-}
 
 
 -- IO
@@ -289,9 +302,27 @@ showHistory cs = unlines $ map markCurrentState cs
 
 -- ∑ d1 == ∑ d2
 -- length (t1!!0) == length (t2!!0)
--- crossTrans :: DTrans -> DTrans -> DTrans
--- crossTrans t1 t2 =
+crossTrans :: DTrans -> DTrans -> DTrans
+crossTrans t1 t2 = [ f stateList_1 stateList_2
+    | stateList_1 <- t1
+    , stateList_2 <- t2
+    ] where
+    f = zipWith (\x y -> nc * ( x - 1 ) + y) where
+        nc = length t2
+{-
+A = Q1 x Q2
+index of Aij in the mxn matrix is [ n*i+j | i <- [0..m-1], j <- [0..n-1]]
+i = ( x - 1 ) here
+-}
 
+{-
+Example
+(delta_1, fs_1) = ([[2,1],[1,2]], [2])
+(delta_2, fs_2) = ([[1,2],[2,3],[3,3]], [2])
+(d1, d2) = (deltaToS_DFA1 delta_1 fs_1, deltaToS_DFA1 delta_2 fs_2)
+crossTrans delta_1 delta_2
+[[4,2],[5,3],[6,3],[1,5],[2,6],[3,6]]
+-}
 
 
 -- dIntersec :: MyDFA -> MyDFA -> MyDFA
