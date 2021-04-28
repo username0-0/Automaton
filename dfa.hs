@@ -1,3 +1,5 @@
+-- Deterministic Finite Automaton
+
 module DFA
 ( DFA(..)
 , MyDFA(..)
@@ -12,7 +14,7 @@ module DFA
 -}
 ) where
 
--- make it a module
+import qualified Data.Set as Set
 
 -- (Q, ∑, \delta, q0, F)
 -- check format
@@ -21,11 +23,11 @@ module DFA
 
 data DFA a b =
     ToDFA
-    { states :: [a]
-    , sigma :: [b]
-    , transF :: DTrans
-    , startIndex :: SimpleStartState
-    , finalStates :: [a]
+    { get_states :: [a]
+    , get_sigma :: [b]
+    , get_transF :: DTrans
+    , get_startIndex :: SimpleStartState
+    , get_finalStates :: [a]
     } deriving (Show)
 
 
@@ -55,18 +57,18 @@ type InputCode = Int
 
 data MyDFA =
     S_DFA
-    { s_Q :: [SimpleState]
-    , s_sigma :: [InputCode]
-    , delta :: DTrans
+    { getStates :: [SimpleState]
+    , getDict :: [InputCode]
+    , getDelta :: DTrans
     , q0 :: SimpleStartState
-    , s_F :: [SimpleFState]
+    , getFStates :: [SimpleFState]
     } deriving (Show)
 
 
 -- Example
 -- *Main> S_DFA [1,2] [0,1] [[2,1],[1,2]] 1 [2]
--- S_DFA {s_Q = [1,2], s_sigma = [0,1], delta = [[2,1],[1,2]],
--- q0 = 1, s_F = [2]}
+-- S_DFA {getStates = [1,2], getDict = [0,1], getDelta = [[2,1],[1,2]],
+-- q0 = 1, getFStates = [2]}
 
 
 -- GNFA
@@ -99,11 +101,11 @@ toS_DFA s = S_DFA (read a1) (read a2) (read a3) (read a4) (read a5) where
 {-
 toS_DFA s =
     S_DFA
-    { s_Q       = read $ s !! 0
-    , s_sigma   = read $ s !! 1
-    , delta     = read $ s !! 2
+    { getStates       = read $ s !! 0
+    , getDict   = read $ s !! 1
+    , getDelta     = read $ s !! 2
     , q0        = read $ s !! 3
-    , s_F       = read $ s !! 4
+    , getFStates       = read $ s !! 4
     }
 -}
 -- Example
@@ -111,15 +113,15 @@ toS_DFA s =
 -- toS_DFA s
 
 
--- deltaToS_DFA get info from S_DFA's delta transition function
+-- deltaToS_DFA get info from S_DFA's getDelta transition function
 deltaToS_DFA :: DTrans -> SimpleStartState -> [SimpleFState] -> MyDFA
 deltaToS_DFA d x0 f =
     S_DFA
-    { s_Q = [1..n1]
-    , s_sigma = [0..(n2-1)]
-    , delta = d
+    { getStates = [1..n1]
+    , getDict = [0..(n2-1)]
+    , getDelta = d
     , q0 = x0
-    , s_F = f
+    , getFStates = f
     } where
         n1 = length d
         n2 = length $ d!!0
@@ -155,8 +157,8 @@ instance Show MyDFAConfig where
         , "input:"
         , show w
         ] where
-            q = s_Q d
-            f = s_F d
+            q = getStates d
+            f = getFStates d
 
 
 markCurrentState :: MyDFAConfig -> String
@@ -166,8 +168,9 @@ markCurrentState
     , currentState = x
     , input = _
     }
-    = markCurrentState' (s_Q d) (s_F d) x
--}
+    = markCurrentState' (getStates d) (getFStates d) x
+
+{-
 x <- Q
 x <- [1..n]
 markCurrentState' Q F x
@@ -194,7 +197,7 @@ lsStates
     , currentState = _
     , input = _
     }
-    = markFStates (s_Q d) (s_F d)
+    = markFStates (getStates d) (getFStates d)
 
 markFStates :: [SimpleState] -> [SimpleFState] -> String
 markFStates q f = concat $ zipWith addBrackets (forFStates q f) q
@@ -232,7 +235,7 @@ stepRun c@ToConfig{ dfa = d, currentState = x, input = w@(s:ss)}
         , currentState = f x
         , input = ss
         }
-        where f = dChangeState (delta d) s
+        where f = dChangeState (getDelta d) s
 
 sequenceRun :: MyDFAConfig -> Int -> MyDFAConfig
 sequenceRun c@ToConfig{ dfa = d, currentState = x, input = []} _ = c
@@ -242,7 +245,7 @@ sequenceRun c n
 
 dFinalAccept :: MyDFAConfig -> Bool
 dFinalAccept c@ToConfig{ dfa = d, currentState = x, input = w}
-    | w == [] = elem x (s_F d)
+    | w == [] = elem x (getFStates d)
     | otherwise = dFinalAccept (stepRun c)
 -- not sequenceRun c (length $ input d)
 
@@ -253,13 +256,13 @@ d `willFinallyAccept` w = dFinalAccept $ initConfig d w
 
 
 acceptAtState :: MyDFA -> SimpleState -> Bool
-d `acceptAtState` x = elem x (s_F d)
+d `acceptAtState` x = elem x (getFStates d)
 
 accept :: MyDFA -> [InputCode] -> Bool
 dfa `accept` w = dfa `acceptAtState` x
     where
     (d, x) = foldr f (dfa, q0 dfa) w
-        where f s (d, x) = (d, dChangeState (delta d) s x)
+        where f s (d, x) = (d, dChangeState (getDelta d) s x)
 -- foldr :: (a -> b -> b) -> b -> [a] -> b
 -- acc@(d,x) :: b :: (MyDFA, Int)
 {-
@@ -307,8 +310,11 @@ crossTrans t1 t2 = [ f stateList_1 stateList_2
     | stateList_1 <- t1
     , stateList_2 <- t2
     ] where
-    f = zipWith (\x y -> nc * ( x - 1 ) + y) where
+    f = zipWith (getIndex nc) where
         nc = length t2
+
+getIndex n x y = n * ( x - 1 ) + y
+
 {-
 A = Q1 x Q2
 index of Aij in the mxn matrix is [ n*i+j | i <- [0..m-1], j <- [0..n-1]]
@@ -317,50 +323,71 @@ i = ( x - 1 ) here
 
 {-
 Example
-(delta_1, fs_1) = ([[2,1],[1,2]], [2])
-(delta_2, fs_2) = ([[1,2],[2,3],[3,3]], [2])
+(delta_1, fs_1) = ([[2,1],[1,2]], [2,3,4])
+(delta_2, fs_2) = ([[1,2],[2,3],[3,3]], [1,2,5,6])
 (d1, d2) = (deltaToS_DFA1 delta_1 fs_1, deltaToS_DFA1 delta_2 fs_2)
 crossTrans delta_1 delta_2
 [[4,2],[5,3],[6,3],[1,5],[2,6],[3,6]]
 -}
 
 
--- dIntersec :: MyDFA -> MyDFA -> MyDFA
--- dIntersec dfa1 dfa2 = deltaToS_DFA tfs f where
---     tfs = crossTrans (delta dfa1) (delta dfa2)
---     f =
-
--- dUnion :: MyDFA -> MyDFA -> MyDFA
-
--- dDiff :: MyDFA -> MyDFA -> MyDFA
-
--- test if a MyDFA recognize an empty set
--- dRecEmpty :: MyDFA -> Bool
-
--- dEq :: MyDFA -> MyDFA -> Bool
--- dEq dfa1 dfa2 = dRecEmpty $ dDiff dfa1 dfa2
-
--- dToGNFA :: MyDFA -> ?
--- After fininshing NFA part
--- dToRegExp :: MyDFA -> String
+and_ :: MyDFA -> MyDFA -> MyDFA
+and_ dfa1 dfa2 = let
+    n = length $ getStates dfa2
+    delta_12 = crossTrans (getDelta dfa1) (getDelta dfa2)
+    q0_12 = getIndex n (q0 dfa1) (q0 dfa2)
+    f_12 = [getIndex n x y | x <- getFStates dfa1, y <- getFStates dfa2]
+    in deltaToS_DFA delta_12 q0_12 f_12
 
 
--- operations for regular expression
--- type regExp = String
--- newType regExp = String
--- use type or newType ?
+{-
+getFStatesAnd :: [(a,b)] -> [a] -> [b] -> [SimpleFState]
+getFStatesOr :: [(a,b)] -> [a] -> [b] -> [SimpleFState]
 
--- union
--- star
--- concat
--- regular expression is closed under diff operation
-
--- to check whether a regExp is 'star-closed' is P
+fStatesIntersection :: (a -> b -> c) -> Set.Set a -> Set.Set b -> Set.Set c
+fStatesIntersection f a b = let
+    f1
+-}
 
 {-
 
-dSimulate :: MyDFA -> [InputCode] -> IO()
+or_ :: MyDFA -> MyDFA -> MyDFA
+or_ dfa1 dfa2 = let
+    n = length $ getStates dfa2
+    delta_12 = crossTrans (getDelta dfa1) (getDelta dfa2)
+    q0_12 = getIndex n (q0 dfa1) (q0 dfa2)
+    f_12 = [getIndex n x y | x <- getFStates dfa1, y <- getFStates dfa2]
+    in deltaToS_DFA delta_12 q0_12 f_12
 
+andNot :: MyDFA -> MyDFA -> MyDFA
+
+test if a MyDFA recognize an empty set
+dRecEmpty :: MyDFA -> Bool
+
+eq :: MyDFA -> MyDFA -> Bool
+eq dfa1 dfa2 = dRecEmpty $ dDiff dfa1 dfa2
+
+dToGNFA :: MyDFA -> ?
+After fininshing NFA part
+dToRegExp :: MyDFA -> String
+
+
+operations for regular expression
+type regExp = String
+newType regExp = String
+use type or newType ?
+
+union
+star
+concat
+regular expression is closed under diff operation
+
+to check whether a regExp is 'star-closed' is P
+-}
+
+{-
+
+simulate :: MyDFA -> [InputCode] -> IO()
 
 
 f a b c d = y
@@ -374,46 +401,4 @@ f
     y
 
 
-
-recycle bin
--- import Data.Char(intToDigit)
-
-getQ :: [String] -> [(Int, Char)]
-getQ s = zip [0..] s
-
-
-why we dont have this function?
-feedArgs f [] = f
-feedArgs f (x:xs) = feedArgs (f x) xs
-
-
-| G_DFA
-{ g_Q :: [String]
-, g_sigma :: String
-, delta :: [[Int]]
-, q0 :: Int
-, s_F :: [Int]
-}
-
-
-toS_DFA' :: String -> String -> String -> String -> String -> MyDFA
-toS_DFA' a0 a1 a2 a3 a4 =
-    S_DFA
-    { s_Q       = read a0
-    , s_sigma   = read a1
-    , delta     = read a2
-    , q0        = read a3
-    , s_F       = read a4
-    }
-
-toS_DFA1 :: String -> String -> String -> String -> MyDFA
-toS_DFA1 a0 a1 a2 a3 =
-    S_DFA
-    { s_Q       = read a0
-    , s_sigma   = read a1
-    , delta     = read a2
-    , q0        = 1
-    , s_F       = read a3
-    }
-    
 -}
